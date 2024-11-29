@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>单行字符串格式化器</title>
+    <style>
+        body {
+            margin: 20px 5%;
+        }
+        textarea {
+            box-sizing: border-box;
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 10px;
+            font-size: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            resize: vertical;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .output_text {
+            padding: 10px;
+            font-size: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .notification {
+            display: none;
+            position: absolute;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            padding: 10px 15px;
+            font-size: 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4caf50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>单行字符串格式化器</h1>
+
+    <h2>多段文本：</h2>
+    <form>
+        <textarea id='input_text' rows='10' placeholder='在此输入多段文本'></textarea>
+        <button id='button' onclick='format()' type='submit'>格式化并复制到剪贴板</button>
+    </form>
+
+    <!-- 动态通知框 -->
+    <div id='notification' class='notification'>复制成功！</div>
+
+    <div id='output_container' style='display: none'>
+        <h2>单行字符串：</h2>
+        <div id='output_text' class='output_text'></div>
+    </div>
+
+    <script>
+        async function format() {
+            // 阻止默认行为：提交表单（会导致刷新页面，清空动态生成的内容）
+            // 因为button默认type='submit'，会自动提交表单，改成'button'也能相同效果
+            event.preventDefault();
+            
+            // 获取输入
+            const inputText = document.getElementById('input_text').value;
+
+            // 如果输入为空
+            if (!inputText.trim()) {
+                alert('请输入内容！');
+                return;
+            }
+
+            // 调用后端
+            const response = await fetch('/formatter', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `input_text=${encodeURIComponent(inputText)}`,
+            });
+            const data = await response.json();
+
+            // 显示输出
+            const outputContainer = document.getElementById('output_container');
+            const outputText = document.getElementById('output_text');
+            outputText.textContent = data.output_text;
+            outputContainer.style.display = 'block';
+
+            // 获取按钮（以计算通知框位置）
+            const button = document.getElementById('button');
+
+            // 复制到剪贴板
+            navigator.clipboard.writeText(data.output_text)
+                .then(() => {
+                    notify(true, button);
+                    // throw new Error('模拟复制失败');
+                })
+                .catch(() => {
+                    notify(false, button);
+                });
+
+            // 清空输入
+            document.getElementById("input_text").value = "";
+        }
+
+        function notify(success, button) {
+            // 获取通知
+            const notification = document.getElementById('notification');
+
+            // 设置消息
+            notification.textContent = success ? '复制成功！' : '复制失败！';
+
+            // 设置背景颜色
+            notification.style.backgroundColor = success ? '#4caf50' : '#f44336'; // 绿；红
+
+            // 获取按钮矩形
+            const buttonRect = button.getBoundingClientRect();
+
+            // 获取滚动偏移
+            const offsetX = window.scrollX;
+            const offsetY = window.scrollY;
+
+            // 计算并设置通知框位置（按钮右侧）
+            notification.style.left = `${buttonRect.right + offsetX + 10}px`;
+            notification.style.top = `${buttonRect.top + offsetY}px`;
+            notification.style.display = 'block';
+
+            // 3秒后自动隐藏通知框
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
