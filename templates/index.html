@@ -83,27 +83,26 @@
                 return;
             }
 
-            // 调用后端
-            const response = await fetch('/formatter', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `input_text=${encodeURIComponent(inputText)}`,
-            });
-            const data = await response.json();
+            // 将多段文本按行分割
+            const lines = inputText.split('\n');
+
+            // 去掉每行的开头空格，同时去掉空行
+            const processedLines = lines.map(line => line.trim()).filter(line => line);
+
+            // 用 '\\n' 将各行连接成单行字符串
+            const line = processedLines.join('\\n');
 
             // 显示输出
             const outputContainer = document.getElementById('output_container');
             const outputText = document.getElementById('output_text');
-            outputText.textContent = data.output_text;
+            outputText.textContent = line;
             outputContainer.style.display = 'block';
 
             // 获取按钮（以计算通知框位置）
             const button = document.getElementById('button');
 
             // 复制到剪贴板
-            navigator.clipboard.writeText(data.output_text)
+            navigator.clipboard.writeText(line)
                 .then(() => {
                     notify(true, button);
                     // throw new Error('模拟复制失败');
